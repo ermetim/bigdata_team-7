@@ -18,6 +18,8 @@ if ! dpkg -s sshpass >/dev/null 2>&1; then
     echo "$SSH_PASS" | sudo -S apt install -y sshpass
     echo "*****************************************************************************"
     echo
+else
+    echo "Пакет sshpass уже установлен."
 fi
 
 # Определяем переменные
@@ -53,7 +55,8 @@ create_user_on_node() {
     echo "Подключаемся к $NODE..."
 
 #    sshpass -p "$SSH_PASS" ssh -J "$JUMP_SERVER" "$NODE" bash << EOF
-    sshpass -p "$SSH_PASS" ssh -o StrictHostKeyChecking=no -J "$JUMP_SERVER" "$NODE" bash << EOF
+#    sshpass -p "$SSH_PASS" ssh -o StrictHostKeyChecking=no -J "$JUMP_SERVER" "$NODE" bash << EOF
+    sshpass -p "$SSH_PASS" ssh -o StrictHostKeyChecking=no "$NODE" bash << EOF
 
     # Очищаем файл /etc/hosts
     echo "$SSH_PASS" | sudo -p "" -S truncate -s 0 /etc/hosts
@@ -96,7 +99,8 @@ done
 # Сбор публичных ключей с каждой ноды
 echo "Собираем публичные ключи ..."
 for NODE in "${USER_NODES[@]}"; do
-    PUBLIC_KEY=$(sshpass -p "$SSH_PASS" ssh -J "$JUMP_SERVER" "$NODE" "cat ~/.ssh/id_ed25519.pub")
+#    PUBLIC_KEY=$(sshpass -p "$SSH_PASS" ssh -J "$JUMP_SERVER" "$NODE" "cat ~/.ssh/id_ed25519.pub")
+    PUBLIC_KEY=$(sshpass -p "$SSH_PASS" ssh "$NODE" "cat ~/.ssh/id_ed25519.pub")
     PUBLIC_KEYS+="\n$PUBLIC_KEY"
 done
 
@@ -107,7 +111,8 @@ done
 # Добавление ключей PUBLIC_KEYS в authorized_keys на каждой ноде
 echo "Добавляем публичные ключи ..."
 for NODE in "${USER_NODES[@]}"; do
-    sshpass -p "$SSH_PASS" ssh -J "$JUMP_SERVER" "$NODE" bash << EOF
+#    sshpass -p "$SSH_PASS" ssh -J "$JUMP_SERVER" "$NODE" bash << EOF
+    sshpass -p "$SSH_PASS" ssh "$NODE" bash << EOF
 
     # Добавляем собранные ключи в authorized_keys
     bash -c 'echo -e "$PUBLIC_KEYS" >> ~/.ssh/authorized_keys'
