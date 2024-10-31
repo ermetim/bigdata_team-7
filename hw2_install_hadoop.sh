@@ -52,7 +52,7 @@ install_hadoop() {
     sshpass -p "$SSH_PASS" ssh "$NODE" bash << EOF
         if [[ ! -f "$HADOOP_TAR" ]]; then
             echo "Архив $HADOOP_TAR не найден. Скачиваем Hadoop..."
-            wget --progress=bar --quiet "$HADOOP_URL"
+            wget --progress=bar "$HADOOP_URL"
 
             if [[ -f "$HADOOP_TAR" ]]; then
                 echo "Hadoop успешно скачан на $NODE."
@@ -83,13 +83,27 @@ EOF
 for NODE in "${USER_NODES[@]}"; do
     install_hadoop "$NODE"
 
-    # Копируем конфигурационные файлы
+#    # Копируем конфигурационные файлы
+#    echo "Копируем конфигурационные файлы на $NODE..."
+#    sshpass -p "$SSH_PASS" scp "$CONFIG_DIR/.profile" "$NODE:~/.profile"
+#    sshpass -p "$SSH_PASS" scp "$CONFIG_DIR/core-site.xml" "$NODE:~/hadoop-$HADOOP_VERSION/etc/hadoop/core-site.xml"
+#    sshpass -p "$SSH_PASS" scp "$CONFIG_DIR/hadoop-env.sh" "$NODE:~/hadoop-$HADOOP_VERSION/etc/hadoop/hadoop-env.sh"
+#    sshpass -p "$SSH_PASS" scp "$CONFIG_DIR/hdfs-site.xml" "$NODE:~/hadoop-$HADOOP_VERSION/etc/hadoop/hdfs-site.xml"
+#    sshpass -p "$SSH_PASS" scp "$CONFIG_DIR/nn" "$NODE:/etc/nginx/sites-enabled/nn"
+#    sshpass -p "$SSH_PASS" scp "$CONFIG_DIR/workers" "$NODE:~/hadoop-$HADOOP_VERSION/etc/hadoop/workers"
+
+    # Копируем конфигурационные файлы на $NODE
     echo "Копируем конфигурационные файлы на $NODE..."
     sshpass -p "$SSH_PASS" scp "$CONFIG_DIR/.profile" "$NODE:~/.profile"
     sshpass -p "$SSH_PASS" scp "$CONFIG_DIR/core-site.xml" "$NODE:~/hadoop-$HADOOP_VERSION/etc/hadoop/core-site.xml"
     sshpass -p "$SSH_PASS" scp "$CONFIG_DIR/hadoop-env.sh" "$NODE:~/hadoop-$HADOOP_VERSION/etc/hadoop/hadoop-env.sh"
     sshpass -p "$SSH_PASS" scp "$CONFIG_DIR/hdfs-site.xml" "$NODE:~/hadoop-$HADOOP_VERSION/etc/hadoop/hdfs-site.xml"
-    sshpass -p "$SSH_PASS" scp "$CONFIG_DIR/nn" "$NODE:/etc/nginx/sites-enabled/nn"
+
+    # Сначала копируем файл в домашнюю директорию
+    sshpass -p "$SSH_PASS" scp "$CONFIG_DIR/nn" "$NODE:~/nn"
+    # Затем перемещаем его с использованием sudo
+    sshpass -p "$SSH_PASS" ssh "$NODE" "sudo mv ~/nn /etc/nginx/sites-enabled/nn"
+
     sshpass -p "$SSH_PASS" scp "$CONFIG_DIR/workers" "$NODE:~/hadoop-$HADOOP_VERSION/etc/hadoop/workers"
 
     echo "Конфигурационные файлы успешно скопированы на $NODE."
