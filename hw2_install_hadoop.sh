@@ -52,7 +52,7 @@ echo "Подключаемся к $USER_JN и проверяем наличие 
 sshpass -p "$SSH_PASS" ssh "$USER_JN" bash << EOF
     if [[ ! -f "$HADOOP_TAR" ]]; then
         echo "Архив $HADOOP_TAR не найден. Скачиваем Hadoop..."
-        wget "$HADOOP_URL"
+        wget --progress=bar --quiet "$HADOOP_URL"
 
         if [[ -f "$HADOOP_TAR" ]]; then
             echo "Hadoop успешно скачан на $USER_JN."
