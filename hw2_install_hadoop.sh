@@ -44,46 +44,44 @@ install_utilities() {
 # Установка необходимых утилит
 install_utilities sshpass wget tar
 
-# Подключаемся к первой ноде и скачиваем Hadoop, если его нет
-USER_JN="${USER_NODES[0]}"
-USER_NN="${USER_NODES[1]}"
-echo "Подключаемся к $USER_JN и проверяем наличие архива $HADOOP_TAR..."
+# Функция для скачивания и установки Hadoop на ноду
+install_hadoop() {
+    local NODE="$1"
+    echo "Подключаемся к $NODE и проверяем наличие архива $HADOOP_TAR..."
 
-sshpass -p "$SSH_PASS" ssh "$USER_JN" bash << EOF
-    if [[ ! -f "$HADOOP_TAR" ]]; then
-        echo "Архив $HADOOP_TAR не найден. Скачиваем Hadoop..."
-        wget --progress=bar --quiet "$HADOOP_URL"
-
-        if [[ -f "$HADOOP_TAR" ]]; then
-            echo "Hadoop успешно скачан на $USER_JN."
-        else
-            echo "Ошибка при скачивании Hadoop. Завершаем выполнение."
-            exit 1
-        fi
-    else
-        echo "Архив $HADOOP_TAR уже существует на $USER_JN, пропускаем скачивание."
-    fi
-EOF
-
-# Копируем архив на остальные ноды только если файла еще нет
-for NODE in "${USER_NODES[@]:1}"; do
-    echo "Копируем Hadoop на $NODE..."
-    sshpass -p "$SSH_PASS" scp "$USER_JN:$HADOOP_TAR" "$NODE:~"
-
-    echo "Распаковываем Hadoop на $NODE..."
     sshpass -p "$SSH_PASS" ssh "$NODE" bash << EOF
-        if [ -f ~/$HADOOP_TAR ]; then
+        if [[ ! -f "$HADOOP_TAR" ]]; then
+            echo "Архив $HADOOP_TAR не найден. Скачиваем Hadoop..."
+            wget --progress=bar --quiet "$HADOOP_URL"
+
+            if [[ -f "$HADOOP_TAR" ]]; then
+                echo "Hadoop успешно скачан на $NODE."
+            else
+                echo "Ошибка при скачивании Hadoop. Завершаем выполнение."
+                exit 1
+            fi
+        else
+            echo "Архив $HADOOP_TAR уже существует на $NODE, пропускаем скачивание."
+        fi
+
+        # Распаковываем Hadoop
+        if [ -f "$HADOOP_TAR" ]; then
             if [ -d "hadoop-$HADOOP_VERSION" ]; then
                 echo "Папка hadoop-$HADOOP_VERSION уже существует. Удаляем..."
                 rm -rf "hadoop-$HADOOP_VERSION"
             fi
-            tar -xvzf ~/$HADOOP_TAR
+            tar -xvzf "$HADOOP_TAR"
             echo "Hadoop успешно установлен на $NODE."
-            rm -f ~/$HADOOP_TAR  # Удаляем архив после распаковки
+            rm -f "$HADOOP_TAR"  # Удаляем архив после распаковки
         else
             echo "Архив $HADOOP_TAR не найден на $NODE."
         fi
 EOF
+}
+
+# Устанавливаем Hadoop на каждую ноду
+for NODE in "${USER_NODES[@]}"; do
+    install_hadoop "$NODE"
 
     # Копируем конфигурационные файлы
     echo "Копируем конфигурационные файлы на $NODE..."
