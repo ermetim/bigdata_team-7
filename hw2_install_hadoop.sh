@@ -65,8 +65,10 @@ fi
 # Копируем архив на все ноды и распаковываем
 for NODE in "${USER_NODES[@]}"; do
     echo "Копируем Hadoop на $NODE..."
-    sshpass -p "$SSH_PASS" scp "$HADOOP_TAR" "$NODE:~"
-#    sshpass -p "$SSH_PASS" rsync --progress --stats --info=progress2 --human-readable --partial "$HADOOP_TAR" "$NODE:~"
+#    sshpass -p "$SSH_PASS" scp "$HADOOP_TAR" "$NODE:~"
+    sshpass -p "$SSH_PASS" rsync --progress --info=progress2 --human-readable --partial "$HADOOP_TAR" "$NODE:~"
+    echo "Hadoop успешно скопирован на $NODE..."
+    echo
 
     echo "Распаковываем Hadoop на $NODE..."
     sshpass -p "$SSH_PASS" ssh "$NODE" bash << EOF
@@ -82,6 +84,8 @@ for NODE in "${USER_NODES[@]}"; do
             echo "Архив $HADOOP_TAR не найден на $NODE."
         fi
 EOF
+    echo "Hadoop успешно распакован на $NODE..."
+    echo
 
     # Копируем конфигурационные файлы на $NODE
     sshpass -p "$SSH_PASS" scp "$CONFIG_DIR/.profile" "$NODE:~/.profile"
