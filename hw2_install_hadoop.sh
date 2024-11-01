@@ -96,7 +96,7 @@ EOF
 
     echo "Конфигурационные файлы успешно скопированы на $NODE."
     # Здесь выполняем source ~/.profile на удалённой ноде
-    sshpass -p "$SSH_PASS" ssh "$NODE" bash -c 'source ~/.profile && echo "Переменные окружения загружены."'
+    sshpass -p "$SSH_PASS" ssh "$NODE" 'bash -l -c ". ~/.profile && echo \"Переменные окружения загружены.\" "'
     echo "*****************************************************************************"
     echo
 done
