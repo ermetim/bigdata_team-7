@@ -95,6 +95,8 @@ EOF
     sshpass -p "$SSH_PASS" scp "$CONFIG_DIR/workers" "$NODE:~/hadoop-$HADOOP_VERSION/etc/hadoop/workers"
 
     echo "Конфигурационные файлы успешно скопированы на $NODE."
+    # Здесь выполняем source ~/.profile на удалённой ноде
+    sshpass -p "$SSH_PASS" ssh "$NODE" bash -c 'source ~/.profile && echo "Переменные окружения загружены."'
     echo "*****************************************************************************"
     echo
 done
