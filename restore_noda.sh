@@ -47,6 +47,9 @@ restore_system() {
 
     # Удаляем пользователя hadoop, если он существует
     if getent passwd "$NEW_USER" > /dev/null; then
+        echo "Завершаем все процессы пользователя $NEW_USER..."
+        echo "$SSH_PASS" | sudo -S -p "" pkill -u "$NEW_USER"
+
         echo "$SSH_PASS" | sudo -S -p "" deluser --remove-home "$NEW_USER"
         echo "Пользователь $NEW_USER удален."
     fi

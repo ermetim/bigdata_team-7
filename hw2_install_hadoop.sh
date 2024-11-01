@@ -109,7 +109,7 @@ sshpass -p "$SSH_PASS" ssh "$HADOOP_NN" bash << EOF
     cd ~/hadoop-$HADOOP_VERSION
 
     echo "Форматируем NameNode..."
-    bin/hdfs namenode -format
+    bin/hdfs namenode -format -force
     echo "Форматирование NameNode завершено."
 
     echo "Запускаем распределенную файловую систему HDFS..."
