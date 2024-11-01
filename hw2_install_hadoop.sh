@@ -142,14 +142,15 @@ echo "$SSH_PASS" | sudo -S cp /etc/nginx/sites-available/default /etc/nginx/site
 
 # Очистка содержимого и запись содержимого файла nn из каталога конфигурации
 echo "$SSH_PASS" | sudo -S truncate -s 0 /etc/nginx/sites-available/nn
+
 echo "$SSH_PASS" | sudo -S bash -c "cat $CONFIG_DIR/nn >> /etc/nginx/sites-available/nn"
 
 # Создание символической ссылки - добавление конфигурации в директорию активных конфигураций.
 echo "$SSH_PASS" | sudo -S ln -sf /etc/nginx/sites-available/nn /etc/nginx/sites-enabled/nn
-
+echo
 # Перезагрузка Nginx для принятия изменений конфигурации
 echo "$SSH_PASS" | sudo -S systemctl reload nginx
-
+echo
 echo "Конфигурационные настройки Nginx успешно выполнены"
 echo "*****************************************************************************"
 echo
