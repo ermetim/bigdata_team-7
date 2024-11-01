@@ -6,7 +6,7 @@ echo
 
 # Определяем переменные
 NEW_USER="hadoop"
-#NEW_USER
+
 # Определяем IP-адреса целевых нод
 IP_NODES=(
     "192.168.1.30"
@@ -20,7 +20,7 @@ USER_NODES=()
 for IP in "${IP_NODES[@]}"; do
     USER_NODES+=("$NEW_USER@$IP")
 done
-
+HADOOP_NN="${USER_NODES[1]}"
 HADOOP_VERSION="3.4.0"
 HADOOP_TAR="hadoop-$HADOOP_VERSION.tar.gz"
 HADOOP_URL="https://dlcdn.apache.org/hadoop/common/hadoop-$HADOOP_VERSION/$HADOOP_TAR"
@@ -41,8 +41,10 @@ install_utilities() {
     done
 }
 
+
 # Установка необходимых утилит
 install_utilities sshpass wget tar
+
 
 # Скачиваем Hadoop локально
 if [[ ! -f "$HADOOP_TAR" ]]; then
@@ -58,6 +60,7 @@ if [[ ! -f "$HADOOP_TAR" ]]; then
 else
     echo "Архив $HADOOP_TAR уже существует локально, пропускаем скачивание."
 fi
+
 
 # Копируем архив на все ноды и распаковываем
 for NODE in "${USER_NODES[@]}"; do
@@ -84,19 +87,66 @@ EOF
     sshpass -p "$SSH_PASS" scp "$CONFIG_DIR/core-site.xml" "$NODE:~/hadoop-$HADOOP_VERSION/etc/hadoop/core-site.xml"
     sshpass -p "$SSH_PASS" scp "$CONFIG_DIR/hadoop-env.sh" "$NODE:~/hadoop-$HADOOP_VERSION/etc/hadoop/hadoop-env.sh"
     sshpass -p "$SSH_PASS" scp "$CONFIG_DIR/hdfs-site.xml" "$NODE:~/hadoop-$HADOOP_VERSION/etc/hadoop/hdfs-site.xml"
-
-    # Сначала копируем файл в домашнюю директорию
-    sshpass -p "$SSH_PASS" scp "$CONFIG_DIR/nn" "$NODE:~/nn"
-
-    # Перемещаем файл с использованием sudo, передавая пароль через echo
-#    sshpass -p "$SSH_PASS" ssh "$NODE" "echo $SSH_PASS | sudo -S tee /etc/nginx/sites-enabled/nn < ~/nn > /dev/null && rm ~/nn"
-
     sshpass -p "$SSH_PASS" scp "$CONFIG_DIR/workers" "$NODE:~/hadoop-$HADOOP_VERSION/etc/hadoop/workers"
 
     echo "Конфигурационные файлы успешно скопированы на $NODE."
     echo "*****************************************************************************"
     echo
 done
+
+
+# Подключаемся к name node
+echo "Подключаемся к $HADOOP_NN для форматирования NameNode и запуска HDFS..."
+
+sshpass -p "$SSH_PASS" ssh "$HADOOP_NN" bash << EOF
+    cd ~/hadoop-$HADOOP_VERSION
+
+    echo "Форматируем NameNode..."
+    bin/hdfs namenode -format
+    echo "Форматирование NameNode завершено."
+
+    echo "Запускаем распределенную файловую систему HDFS..."
+    sbin/start-dfs.sh
+    echo "Запуск HDFS завершен."
+
+    echo "Проверка запущенных процессов Java на $HADOOP_NN:"
+    jps
+EOF
+
+echo "Подключение и операции на $HADOOP_NN завершены."
+echo "*****************************************************************************"
+echo
+
+# Проверяем вывод команды jps на каждой ноде
+for NODE in "${USER_NODES[@]}"; do
+    echo "Подключаемся к $NODE для проверки процесса через команду jps..."
+    sshpass -p "$SSH_PASS" ssh "$NODE" bash << EOF
+        echo "Запущенные процессы Java на $NODE:"
+        jps
+EOF
+    echo "Проверка завершена для $NODE."
+    echo "*****************************************************************************"
+done
+
+
+# Копируем файл конфигурации Nginx и делаем нужные изменения
+# создание копии файла конфигурации Nginx
+echo "$SSH_PASS" | sudo -S cp /etc/nginx/sites-available/default /etc/nginx/sites-available/nn
+
+# Очистка содержимого и запись содержимого файла nn из каталога конфигурации
+echo "$SSH_PASS" | sudo -S truncate -s 0 /etc/nginx/sites-available/nn
+echo "$SSH_PASS" | sudo -S bash -c "cat $CONFIG_DIR/nn >> /etc/nginx/sites-available/nn"
+
+# Создание символической ссылки - добавление конфигурации в директорию активных конфигураций.
+echo "$SSH_PASS" | sudo -S ln -sf /etc/nginx/sites-available/nn /etc/nginx/sites-enabled/nn
+
+# Перезагрузка Nginx для принятия изменений конфигурации
+echo "$SSH_PASS" | sudo -S systemctl reload nginx
+
+echo "Конфигурационные настройки Nginx успешно выполнены"
+echo "*****************************************************************************"
+echo
+
 
 echo "Скрипт выполнен успешно."
 
