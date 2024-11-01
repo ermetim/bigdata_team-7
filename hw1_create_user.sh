@@ -8,19 +8,22 @@ NEW_USER="hadoop"
 read -s -p "Введите пароль для нового пользователя $NEW_USER: " USER_PASS
 echo
 
-# Установка sshpass, если он отсутствует
+# Функция для установки утилит
+install_utilities() {
+    for utility in "$@"; do
+        if ! command -v "$utility" &> /dev/null; then
+            echo "$utility не установлен. Устанавливаем..."
+            echo "$SSH_PASS" | sudo -S apt update -y
+            echo "$SSH_PASS" | sudo -S apt install -y "$utility"
+        else
+            echo "$utility уже установлен."
+        fi
+    done
+}
 
-if ! dpkg -s sshpass >/dev/null 2>&1; then
-    echo "Пакет sshpass не установлен. Устанавливаем..."
-#    sudo apt update -y
-#    sudo apt install sshpass -y
-    echo "$SSH_PASS" | sudo -S apt update -y
-    echo "$SSH_PASS" | sudo -S apt install -y sshpass
-    echo "*****************************************************************************"
-    echo
-else
-    echo "Пакет sshpass уже установлен."
-fi
+
+# Установка необходимых утилит
+install_utilities sshpass wget tar rsync
 
 # Определяем переменные
 JUMP_SERVER="team@176.109.91.41"

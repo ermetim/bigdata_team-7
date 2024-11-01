@@ -43,7 +43,7 @@ install_utilities() {
 
 
 # Установка необходимых утилит
-install_utilities sshpass wget tar
+install_utilities sshpass wget tar rsync
 
 
 # Скачиваем Hadoop локально
@@ -66,6 +66,7 @@ fi
 for NODE in "${USER_NODES[@]}"; do
     echo "Копируем Hadoop на $NODE..."
     sshpass -p "$SSH_PASS" scp "$HADOOP_TAR" "$NODE:~"
+#    sshpass -p "$SSH_PASS" rsync --progress --stats --info=progress2 --human-readable --partial "$HADOOP_TAR" "$NODE:~"
 
     echo "Распаковываем Hadoop на $NODE..."
     sshpass -p "$SSH_PASS" ssh "$NODE" bash << EOF
