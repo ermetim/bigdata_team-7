@@ -62,7 +62,7 @@ fi
 # Копируем архив на все ноды и распаковываем
 for NODE in "${USER_NODES[@]}"; do
     echo "Копируем Hadoop на $NODE..."
-    sshpass -p "$SSH_PASS" scp "$HADOOP_TAR" "$NODE:~"
+    sshpass -p "$SSH_PASS" scp -v "$HADOOP_TAR" "$NODE:~"
 
     echo "Распаковываем Hadoop на $NODE..."
     sshpass -p "$SSH_PASS" ssh "$NODE" bash << EOF
@@ -80,7 +80,6 @@ for NODE in "${USER_NODES[@]}"; do
 EOF
 
     # Копируем конфигурационные файлы на $NODE
-    echo "Копируем конфигурационные файлы на $NODE..."
     sshpass -p "$SSH_PASS" scp "$CONFIG_DIR/.profile" "$NODE:~/.profile"
     sshpass -p "$SSH_PASS" scp "$CONFIG_DIR/core-site.xml" "$NODE:~/hadoop-$HADOOP_VERSION/etc/hadoop/core-site.xml"
     sshpass -p "$SSH_PASS" scp "$CONFIG_DIR/hadoop-env.sh" "$NODE:~/hadoop-$HADOOP_VERSION/etc/hadoop/hadoop-env.sh"
@@ -88,10 +87,16 @@ EOF
 
     # Сначала копируем файл в домашнюю директорию
     sshpass -p "$SSH_PASS" scp "$CONFIG_DIR/nn" "$NODE:~/nn"
-    # Затем перемещаем его с использованием sudo
-    sshpass -p "$SSH_PASS" ssh "$NODE" "sudo mv ~/nn /etc/nginx/sites-enabled/nn"
+    echo
+    echo "nn скопировно"
+    # Перемещаем файл с использованием sudo, передавая пароль через echo
+    sshpass -p "$SSH_PASS" ssh "$NODE" "echo $SSH_PASS | sudo -S mv ~/nn /etc/nginx/sites-enabled/nn"
+    echo
+    echo "nn перемещено"
 
     sshpass -p "$SSH_PASS" scp "$CONFIG_DIR/workers" "$NODE:~/hadoop-$HADOOP_VERSION/etc/hadoop/workers"
+    echo
+    echo "workers скопировано"
 
     echo "Конфигурационные файлы успешно скопированы на $NODE."
     echo "*****************************************************************************"
